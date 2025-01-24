@@ -1,0 +1,11 @@
+name = "my_hello_world"
+description = "Very small Ada project"
+version = "0.1.0-dev"
+
+authors = ["mk"]
+maintainers = ["mk <example@example.com>"]
+licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
+website = ""
+tags = []
+
+executables = ["my_hello_world"]
