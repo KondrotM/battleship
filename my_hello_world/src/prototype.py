@@ -55,6 +55,10 @@ def place_all_ships(grid, ships):
 def attack(grid, visible_grid, ships, row, col):
     tile = grid[row][col]
 
+    if visible_grid[row][col] != '~':
+        print('Already attacked')
+        return 'Invalid'
+
     if tile == 0:
         print('Miss')
         visible_grid[row][col] = 'M'
@@ -73,8 +77,6 @@ def attack(grid, visible_grid, ships, row, col):
                 print(f'{ship.name} has been sunk')
             return (ship.name)
 
-
-
 def print_grid(grid):
     for row in grid:
         print(' '.join(str(cell) for cell in row))
@@ -85,11 +87,11 @@ def ai_take_turn(visible_grid, ai_memory):
 
     for ship in ai_memory.keys():
         if len(ai_memory[ship]['hits']) == ai_memory[ship]['length']:
-            print('Ship already sunk')
+            # ship already sunk
             continue
             
         if len(ai_memory[ship]['hits']) == 0:
-            print('No hits yet')
+            # no hits yet
             continue
 
         rand = False
@@ -116,12 +118,9 @@ def ai_take_turn(visible_grid, ai_memory):
             hits = ai_memory[ship]['hits'].copy()
 
             if hits[0][0] == hits[1][0]: # if x axis is the same
-                direction = 'horizontal'
 
                 # sort hits by x axis
                 hits.sort(key=lambda x: x[1])
-
-                chosen_tile = None
 
                 # first try to increase
                 row = hits[-1][0]
@@ -136,12 +135,8 @@ def ai_take_turn(visible_grid, ai_memory):
 
 
             if hits[0][1] == hits[1][1]: # if y axis is the same
-                direction = 'vertical'
 
                 hits.sort(key=lambda x: x[0])
-
-
-                chosen_tile = None
 
                 # first try to increase
                 row = hits[-1][0] + 1
@@ -152,61 +147,6 @@ def ai_take_turn(visible_grid, ai_memory):
                     row = hits[0][0] - 1 
                     col = hits[0][1]
 
-                chosen_tile = (row, col)
-
-
-                # pdb.set_trace()
-            
-
-            
-
-            
-
-
-
-            # try to attack in the same direction
-
-            # use math to determine direction
-
-            # hit_direction = (ai_memory[ship]['hits'][0][0] - ai_memory[ship]['hits'][1][0], ai_memory[ship]['hits'][0][1] - ai_memory[ship]['hits'][1][1])
-            # pdb.set_trace()
-
-            # try to follow direction
-
-
-
-
-            # hit1 = ai_memory[ship]['hits'][0]
-            # hit2 = ai_memory[ship]['hits'][1]
-
-            # if hit1[0] == hit2[0]:
-            #     # horizontal
-            #     if hit1[1] < hit2[1]:
-            #         # right
-            #         row = hit2[0]
-            #         col = hit2[1] + 1
-            #     else:
-            #         # left
-            #         row = hit2[0]
-            #         col = hit2[1] - 1
-            # else:
-            #     # vertical
-            #     if hit1[0] < hit2[0]:
-            #         # down
-            #         row = hit2[0] + 1
-            #         col = hit2[1]
-            #     else:
-            #         # up
-            #         row = hit2[0] - 1
-            #         col = hit2[1]
-
-            # while row < 0 or row >= len(visible_grid) or col < 0 or col >= len(visible_grid[0]) or visible_grid[row][col] != '~':
-            #     row, col = random_move(visible_grid, rand=True)
-
-            #     break
-
-
-
     if rand:
         row = random.randint(0, len(visible_grid) - 1)
         col = random.randint(0, len(visible_grid[0]) - 1)
@@ -216,6 +156,25 @@ def ai_take_turn(visible_grid, ai_memory):
             col = random.randint(0, len(visible_grid[0]) - 1)
 
     return row, col
+
+def print_grids(opponent_grid, player_grid, opponent_visible_grid):
+
+    nice_player_grid = []
+    for i in range(len(player_grid)):
+        grid_row = []
+        for j in range(len(player_grid[0])):
+            if player_grid[i][j] == 0:
+                grid_row.append('~')
+            else:
+                grid_row.append('X')
+            if opponent_visible_grid[i][j] != '~':
+                grid_row[j] = 'O'
+        nice_player_grid.append(grid_row)
+    print('Opponent Grid                  Player Grid')
+    for i in range(len(opponent_grid)):
+        print(' '.join(str(cell) for cell in opponent_grid[i]) + '    ' + ' '.join(str(cell) for cell in nice_player_grid[i]))
+ 
+
 
 if __name__ == '__main__':
     player1_grid = []
@@ -270,7 +229,6 @@ if __name__ == '__main__':
             'hits': [],
         }
     }
- 
 
     grid_size = 10 
 
@@ -290,66 +248,82 @@ if __name__ == '__main__':
     while not all(ship.hits == ship.length for ship in player1_ships) or not all(ship.hits == ship.length for ship in player2_ships):
         if player == 0:
 
-            print('PLAYER 1 TURN')
-            time.sleep(.1)
+            print('YOUR TURN')
 
-            coords = ai_take_turn(player2_visible_grid, ai1_memory)
+            print_grids(player2_visible_grid, player1_grid, player1_visible_grid)
 
-            out = attack(player2_grid, player2_visible_grid, player2_ships, coords[0], coords[1])
+            out = 'Invalid'
 
-            if out:
-                ai1_memory[out]['hits'].append((coords[0], coords[1]))
+            while out == 'Invalid':
+                inp = input(f'Player {player + 1} enter row and col: ')
+                if inp == 'q':
+                    break
+                
+                # if inp cannot be split into two integers
+                # continue
+                # and other input validation below
+
+                if ' ' not in inp:
+                    print ('Invalid input')
+                    continue
+
+                if not inp.split(' ')[0].isdigit() or not inp.split(' ')[1].isdigit():
+                    print ('Invalid input')
+                    continue
+
+                if int(inp.split(' ')[0]) < 0 or int(inp.split(' ')[0]) >= grid_size or int(inp.split(' ')[1]) < 0 or int(inp.split(' ')[1]) >= grid_size:
+                    print ('Invalid input')
+                    continue
+
+                if player2_visible_grid[int(inp.split(' ')[0])][int(inp.split(' ')[1])] != '~':
+                    print('Already attacked')
+                    continue
+
+                row, col = inp.split(' ')
+
+                out = attack(player2_grid, player2_visible_grid, player2_ships, int(row), int(col))
 
 
-            print('AI 1 ATTACKED %s %s' % (coords[0], coords[1]))
-            time.sleep(.1)
 
-            print_grid(player2_visible_grid)
+            time.sleep(1)
+
+            # coords = ai_take_turn(player2_visible_grid, ai1_memory)
+
+            # out = attack(player2_grid, player2_visible_grid, player2_ships, coords[0], coords[1])
+
+            # if out:
+            #     ai1_memory[out]['hits'].append((coords[0], coords[1]))
+
+
+            # print('AI 1 ATTACKED %s %s' % (coords[0], coords[1]))
+            # time.sleep(.1)
+
 
             if not out:
                 player = 1
 
         else:
-            print ('PLAYER 2 TURN')
+            print ('ENEMY TURN')
 
+            time.sleep(1)
             coords = ai_take_turn(player1_visible_grid, ai2_memory)
 
+            print('ENEMY ATTACKED %s %s' % (coords[0], coords[1]))
+            time.sleep(2)
             out = attack(player1_grid, player1_visible_grid, player1_ships, coords[0], coords[1])
 
             if out:
                 ai2_memory[out]['hits'].append((coords[0], coords[1]))
 
-
-            print('AI 2 ATTACKED %s %s' % (coords[0], coords[1]))
-            time.sleep(.1)
-
-
-            # inp = input(f'Player {player + 1} enter row and col: ')
-            # if inp == 'q':
-            #     break
-            # row, col = inp.split(' ')
-
-            # out = attack(player1_grid, player1_visible_grid, player1_ships, int(row), int(col))
-            print_grid(player1_visible_grid)
+            time.sleep(1)
 
             if not out:
                 player = 0
 
 
+    print('YOU WIN' if player == 0 else 'ENEMY WINS')
     print('Goodbye')
 
-
-    # player = 0
-    # while True:
-    #     print_grid(visible_grid)
-    #     row = int(input('Enter row: '))
-    #     col = int(input('Enter col: '))
-
-    #     attack(grid, visible_grid, row, col)
-
-    #     if all(all(tile[2] for tile in ship.tiles) for ship in ships):
-    #         print('Game over')
-    #         break
 
 
     pdb.set_trace()
