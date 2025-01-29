@@ -1,110 +1,242 @@
+
 with Ada.Text_IO; use Ada.Text_IO;
-with Ada.Command_Line;
+with Ada.Numerics.Discrete_Random; 
 
 procedure My_Hello_World is
-   --  type X_Range is (A, B, C, D, E, F, G, H, I, J);
-   --  type Y_Range is range 0..10;
-   --  type Index is range 1..5;
 
-   --  type My_Int_Array is 
-   --     array (Index) of Int_Range;
+   type Coordinate is record
+      X : Natural;
+      Y : Natural;
+   end record;
 
-   --  Arr : My_Int_Array := (2, 3, 5, 7, 11);
+   type Grid is array (1 .. 10, 1 .. 10) of Natural;
+   type Tile_Array is array (Positive range <>) of Coordinate;
 
-   --  V : Int_Range;
-   --  
-   --  
+   type Ship is tagged record
+      Length : Natural;
+      Hits : Natural := 0;
+      Name: String(1 .. 3);
+      Tiles: Tile_Array(1 .. 6);
 
-   --  type Month_Duration is range 1 .. 31;
-   --  type Month is (January, February, March, 
-   --                 April, May, June, July, 
-   --                 August, September, October, 
-   --                 November, December);
+   end record;
+
+   procedure Place_Ship (
+      S : in out Ship; 
+      G : in out Grid; 
+      C: Coordinate;
+      Direction : String) is
+   begin
+      if Direction = "horizontal" then
+
+         for I in 1 .. S.Length loop
+            G(C.X, C.Y + I) := 1;
+         end loop;
+
+      elsif Direction = "vertical" then
+
+         for I in 1 .. S.Length loop
+            G(C.X + I, C.Y) := 1;
+         end loop;
+
+      else
+         Ada.Text_IO.Put_Line("Invalid direction");
+
+      end if;
+
+   end Place_Ship;
+
+   begin
+
+      declare 
+         --  Player1_Grid : Grid := (others => (others => 0));
+         --  Player2_Grid : Grid := (others => (others => 0));
+         
+         Opponent_Grid: Grid := (others => (others => 0));
+         Opponent_Grid_Hidden : Grid := (others => (others => 0));
+         Opponent_Memory : Grid := (others => (others => 0));
+
+         Player_Grid: Grid := (others => (others => 0));
+         Player_Grid_Hidden : Grid := (others => (others => 0));
+
+         Carrier : Ship;
+         Battleship : Ship;
+         Cruiser : Ship;
+         Submarine : Ship;
+         Destroyer : Ship;
+
+         Water_Symbol : String := "~";
+         Ship_Symbol : String := "X";
+         Miss_Symbol : String := "O";
+
+         X_Offset : Integer;
+
+      begin
 
 
-   --  type My_Int_Array is 
-   --     array (Month) of Month_Duration;
+         
+         Carrier.Length := 5;
+         Carrier.Name := "Car";
 
-   --  Tab : constant My_Int_Array :=
-   --     (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
+         Battleship.Length := 4;
+         Battleship.Name := "Bat";
 
-   --  Feb_Days : Month_Duration := Tab (February);
+         Cruiser.Length := 3;
+         Cruiser.Name := "Cru";
 
+         Submarine.Length := 3;
+         Submarine.Name := "Sub";
 
-   type My_Int is range 0 .. 1000;
+         Destroyer.Length := 2;
+         Destroyer.Name := "Des";
 
-   type X_Label is (A, B, C);
+         Place_Ship(Carrier, Player_Grid, Coordinate'(1, 1), "horizontal");
+         Place_Ship(Battleship, Player_Grid, Coordinate'(2, 1), "horizontal");
+         Place_Ship(Cruiser, Player_Grid, Coordinate'(3, 1), "horizontal");
+         Place_Ship(Submarine, Player_Grid, Coordinate'(4, 1), "horizontal");
+         Place_Ship(Destroyer, Player_Grid, Coordinate'(5, 1), "horizontal");
 
-   type My_Int_Array is 
-      array (0 .. 4) of My_Int;
+         Place_Ship(Carrier, Opponent_Grid, Coordinate'(1, 1), "vertical");
+         Place_Ship(Battleship, Opponent_Grid, Coordinate'(2, 1), "vertical");
+         Place_Ship(Cruiser, Opponent_Grid, Coordinate'(3, 1), "vertical");
+         Place_Ship(Submarine, Opponent_Grid, Coordinate'(4, 1), "vertical");
+         Place_Ship(Destroyer, Opponent_Grid, Coordinate'(5, 1), "vertical");
 
-   type List_Of_Lists is array (X_Label) of My_Int_Array;
-
-   True_Board : List_Of_Lists :=
-      ((0, 0, 1, 1, 1),
-      (0, 0, 1, 1, 0),
-      (1, 1, 1, 1, 0));
-
-   Visible_Board : List_Of_Lists :=
-      ((0, 0, 0, 0, 0),
-      (0, 0, 0, 0, 0),
-      (0, 0, 0, 0, 0));
-
-   type User_Input is new String (1 .. 10);
-
-
-begin
-
-   --  for I in Tab'Range loop
-   --     Put (My_Int'Image (Tab (I)));
-   --  end loop;
-
-   loop
-   for I in Visible_Board'Range loop
-      for J in Visible_Board(I)'Range loop
-         Put (X_Label'Image (I));
-         Put (Integer'Image (J));
-         Put (" has value");
-         Put (My_Int'Image (Visible_Board(I)(J)));
+         Put (" Opponent Grid              Player Grid");
          New_Line;
-      end loop;
-   end loop;
+         New_Line;
+         
+         Put ("   0 1 2 3 4 5 6 7 8 9      0 1 2 3 4 5 6 7 8 9");
+         New_Line;
+
+         while True loop
+
+            for I in Player_Grid'Range loop
+               --  Put (Player_Grid(I, 2)'Image);
+
+                  X_Offset := I - 1;
+
+                  Put (X_Offset'Image);
+                  Put (" ");
+
+               for J in Opponent_Grid_Hidden'Range loop
+                  if Opponent_Grid_Hidden(I, J) = 0 then
+                     Put (Water_Symbol);
+                  else if Opponent_Grid_Hidden(I, J) = 1 then
+                     Put (Ship_Symbol);
+                  else if Opponent_Grid_Hidden(I, J) = 2 then
+                     Put (Miss_Symbol);
+                  end if; end if; end if;
+
+                  Put (" ");
+               end loop;            
+
+               Put("     ");
 
 
-   New_Line;
+               for J in Player_Grid'Range(2) loop
 
-      declare
-         Input_Line : String := Ada.Text_IO.Get_Line;
-      begin -- Input_Loop
-            exit when Input_Line = "exit";
-            Ada.Text_IO.Put_Line ("You entered: " & Input_Line);
+                  if Player_Grid(I, J) = 0 then
+                     Put (Water_Symbol);
+                  else if Player_Grid(I, J) = 1 then
+                     Put (Ship_Symbol);
+                  else if Player_Grid(I, J) = 2 then
+                     Put (Miss_Symbol);
+                  end if; end if; end if;
 
-            --  split the first and second characters into individual variables
-            declare
-               First_Char : Character := Input_Line(1);
-               Second_Char : Character := Input_Line(2);
-            begin
-               Ada.Text_IO.Put_Line ("First character: " & Character'Image (First_Char));
-               Ada.Text_IO.Put_Line ("Second character: " & Character'Image (Second_Char));
+                  Put (" ");
 
-               declare
-                    X : X_Label := X_Label'Value (First_Char'Image(2 .. First_Char'Image'Length - 1));
-                    Y : Integer := Integer'Value (Second_Char'Image(2 .. Second_Char'Image'Length - 1));
-               begin
-                  Ada.Text_IO.Put_Line ("X: " & X_Label'Image (X));
-                  Ada.Text_IO.Put_Line ("Y: " & Integer'Image (Y));
+               end loop;
 
-                  Visible_Board(X)(Y) := True_Board(X)(Y);
-               end;
+               New_Line;
+
+            end loop;
+
+
+            New_Line;
+            Put(" Enter coordinates:                     0-9 0-9");
+            New_Line;
+            Put( "  > ");
+
+
+            declare 
+
+            Valid_Input : Boolean := False;
+            X_Coordinate : Integer;
+            Y_Coordinate : Integer;
+
+            begin 
+
+               while not Valid_Input loop
+
+                  declare 
+
+                     Input_Line : String := Ada.Text_IO.Get_Line; 
+
+                  begin
+
+                     if Input_Line = "q" then
+                        exit;
+                     end if;
+
+                  --    if input is not three characters long, then it is invalid
+                     if Input_Line'Length /= 3 then
+                        New_Line;
+                        Put(" Invalid input. Must be 3 chars");
+                        New_Line;
+
+                     -- if input 1 and 3 are not numbers, then it is invalid
+                     elsif not (Input_Line(1) in '0' ..'9') or not (Input_Line(3) in '0' .. '9') then
+                        New_Line;
+                        Put(" Invalid input. Try '4 5'");
+                        New_Line;
+
+                     --  elsif co-ord has already been guessed (in oppontn_grid_hidden), then it is invalid
+                     elsif Opponent_Grid_Hidden(Integer'Value(Input_Line(1 .. 1)) + 1, Integer'Value(Input_Line(3 .. 3)) + 1) /= 0 then
+                        New_Line;
+                        Put(" Invalid input.");
+                        New_Line;
+                        Put(" You have already guessed this coordinate");
+                        New_Line;
+
+                     else 
+                        Valid_Input := True;
+                        X_Coordinate := Integer'Value(Input_Line(1 .. 1)) + 1;
+                        Y_Coordinate := Integer'Value(Input_Line(3 .. 3)) + 1;
+                     end if;
+
+                     if not Valid_Input then
+                        New_Line;
+                        Put(" Enter coordinates:                     0-9 0-9");
+                        New_Line;
+                        Put( "  > ");
+                        end if;
+
+                  end;
+
+               end loop;
+
+               New_Line;
+
+               if Opponent_Grid(X_Coordinate, Y_Coordinate) = 1 then
+                  Put("   Hit!");
+                  Opponent_Grid_Hidden(X_Coordinate, Y_Coordinate) := 1;
+               else
+                  Put("   Miss!");
+                  Opponent_Grid_Hidden(X_Coordinate, Y_Coordinate) := 2;
+               end if;
+
+               New_Line;
+               New_Line;
+
+
             end;
 
-      end;
-   end loop;
 
-   --  for M in Month loop
-   --     Put_Line
-   --        (Month'Image (M) & " has" & Month_Duration'Image (Tab (M)) & " days."); 
-   --  end loop;
-  
-   Put_Line ("Finished!");
+
+         end loop;
+
+
+      end;
+
+
 end My_Hello_World;
