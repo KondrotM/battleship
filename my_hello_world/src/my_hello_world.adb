@@ -20,6 +20,14 @@ procedure My_Hello_World is
 
    end record;
 
+   subtype Random_Range is Integer range 1 .. 10;
+   package Random_Roll is new
+     Ada.Numerics.Discrete_Random (Random_Range);
+   use Random_Roll;
+
+   Number_Generator : Generator;
+   Coord : Integer;
+
    procedure Place_Ship (
       S : in out Ship; 
       G : in out Grid; 
@@ -71,6 +79,10 @@ procedure My_Hello_World is
          X_Offset : Integer;
 
       begin
+
+         Reset(Number_Generator);
+         Coord := Random(Number_Generator);
+         Put(Coord'Image);
 
 
          
