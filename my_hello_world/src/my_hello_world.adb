@@ -1,5 +1,10 @@
 
 with Ada.Text_IO; use Ada.Text_IO;
+with Ada.Strings; use Ada.Strings;
+
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+
+
 with Ada.Numerics.Discrete_Random; 
 
 procedure My_Hello_World is
@@ -15,7 +20,7 @@ procedure My_Hello_World is
    type Ship is tagged record
       Length : Natural;
       Hits : Natural := 0;
-      Name: String(1 .. 3);
+      Name: Unbounded_String;
       Tiles: Tile_Array(1 .. 6);
 
    end record;
@@ -25,37 +30,91 @@ procedure My_Hello_World is
      Ada.Numerics.Discrete_Random (Random_Range);
    use Random_Roll;
 
-   Number_Generator : Generator;
+   subtype Random_Orientation is Integer range 1 .. 2;
+   package Random_Orientation_Roll is new
+     Ada.Numerics.Discrete_Random (Random_Orientation);
+   use Random_Orientation_Roll;
+
+   Number_Generator : Random_Roll.Generator;
+   Orientation_Generator : Random_Orientation_Roll.Generator;
+
    Coord : Integer;
-
-   procedure Place_Ship (
-      S : in out Ship; 
-      G : in out Grid; 
-      C: Coordinate;
-      Direction : String) is
-   begin
-      if Direction = "horizontal" then
-
-         for I in 1 .. S.Length loop
-            G(C.X, C.Y + I) := 1;
-         end loop;
-
-      elsif Direction = "vertical" then
-
-         for I in 1 .. S.Length loop
-            G(C.X + I, C.Y) := 1;
-         end loop;
-
-      else
-         Ada.Text_IO.Put_Line("Invalid direction");
-
-      end if;
-
-   end Place_Ship;
 
    begin
 
       declare 
+
+         procedure Place_Ship (
+            S : in out Ship; 
+            G : in out Grid; 
+            Direction : String
+            ) is
+         begin
+
+            declare
+               Coord_X : Integer;
+               Coord_Y : Integer;
+               Valid_Placement : Boolean;
+               Ship_Placed : Boolean := False;
+            begin
+
+               while not Ship_Placed loop
+                  Valid_Placement := True;
+
+                  Coord_X := Random(Number_Generator);
+                  Coord_Y := Random(Number_Generator);
+
+                  if Direction = "horizontal" then
+
+                     if Coord_X + S.Length > 10 then 
+                        Valid_Placement := False; -- ship too long
+                     end if;
+
+                     for I in 1 .. S.Length loop
+                        if Valid_Placement and then G(Coord_X + I, Coord_Y) = 1 then
+                           Valid_Placement := False; -- another ship is already there
+                        end if;
+                     end loop;
+
+                     if Valid_Placement then
+                        for I in 1 .. S.Length loop
+                           G(Coord_X + I, Coord_Y) := 1;
+                        end loop;
+                        Ship_Placed := True;
+                     end if;
+
+                  elsif Direction = "vertical" then
+
+                     if Coord_Y + S.Length > 10 then
+                        Valid_Placement := False;
+                     end if;
+
+                     for I in 1 .. S.Length loop
+                        if Valid_Placement and then G(Coord_X, Coord_Y + I) = 1 then
+                           Valid_Placement := False;
+                        end if;
+                     end loop;
+
+                     if Valid_Placement then
+                        for I in 1 .. S.Length loop
+                           G(Coord_X, Coord_Y + I) := 1;
+                        end loop;
+                        Ship_Placed := True;
+                     end if;
+
+                  else
+                     Ada.Text_IO.Put_Line("Error: Invalid direction");
+                     return;
+                  end if;
+
+               end loop;
+
+            end;
+
+         end Place_Ship;
+
+
+
          --  Player1_Grid : Grid := (others => (others => 0));
          --  Player2_Grid : Grid := (others => (others => 0));
          
@@ -66,11 +125,22 @@ procedure My_Hello_World is
          Player_Grid: Grid := (others => (others => 0));
          Player_Grid_Hidden : Grid := (others => (others => 0));
 
-         Carrier : Ship;
-         Battleship : Ship;
-         Cruiser : Ship;
-         Submarine : Ship;
-         Destroyer : Ship;
+         type Ship_Info is record
+            Name : Unbounded_String;
+            Length : Integer;
+         end record;
+
+         Ship_Lookup : array (1 .. 5) of Ship_Info := (
+            (To_Unbounded_String("Carrier"), 5),
+            (To_Unbounded_String("Battleship"), 4),
+            (To_Unbounded_String("Cruiser"), 3),
+            (To_Unbounded_String("Submarine"), 3),
+            (To_Unbounded_String("Destroyer"), 2)
+         );
+
+         Player_Ships :  array (1 .. 5) of Ship;
+         Opponent_Ships :  array (1 .. 5) of Ship; 
+
 
          Water_Symbol : String := "~";
          Ship_Symbol : String := "X";
@@ -78,40 +148,36 @@ procedure My_Hello_World is
 
          X_Offset : Integer;
 
+         All_Ships_Placed : Boolean := False;
+
       begin
 
          Reset(Number_Generator);
-         Coord := Random(Number_Generator);
-         Put(Coord'Image);
+         Reset(Orientation_Generator);
 
 
-         
-         Carrier.Length := 5;
-         Carrier.Name := "Car";
+         for I in 1 .. 5 loop
+            Player_Ships(I).Length := Ship_Lookup(I).Length;
+            Player_Ships(I).Name := Ship_Lookup(I).Name;
 
-         Battleship.Length := 4;
-         Battleship.Name := "Bat";
+            if Random_Orientation_Roll.Random(Orientation_Generator) = 1 then
+               Place_Ship(Player_Ships(I), Player_Grid, "horizontal");
+            else
+               Place_Ship(Player_Ships(I), Player_Grid, "vertical");
+            end if;
+         end loop;
 
-         Cruiser.Length := 3;
-         Cruiser.Name := "Cru";
+         for I in 1 .. 5 loop
+            Opponent_Ships(I).Length := Ship_Lookup(I).Length;
+            Opponent_Ships(I).Name := Ship_Lookup(I).Name;
 
-         Submarine.Length := 3;
-         Submarine.Name := "Sub";
+            if Random_Orientation_Roll.Random(Orientation_Generator) = 1 then
+               Place_Ship(Opponent_Ships(I), Opponent_Grid, "horizontal");
+            else
+               Place_Ship(Opponent_Ships(I), Opponent_Grid, "vertical");
+            end if;
+         end loop;
 
-         Destroyer.Length := 2;
-         Destroyer.Name := "Des";
-
-         Place_Ship(Carrier, Player_Grid, Coordinate'(1, 1), "horizontal");
-         Place_Ship(Battleship, Player_Grid, Coordinate'(2, 1), "horizontal");
-         Place_Ship(Cruiser, Player_Grid, Coordinate'(3, 1), "horizontal");
-         Place_Ship(Submarine, Player_Grid, Coordinate'(4, 1), "horizontal");
-         Place_Ship(Destroyer, Player_Grid, Coordinate'(5, 1), "horizontal");
-
-         Place_Ship(Carrier, Opponent_Grid, Coordinate'(1, 1), "vertical");
-         Place_Ship(Battleship, Opponent_Grid, Coordinate'(2, 1), "vertical");
-         Place_Ship(Cruiser, Opponent_Grid, Coordinate'(3, 1), "vertical");
-         Place_Ship(Submarine, Opponent_Grid, Coordinate'(4, 1), "vertical");
-         Place_Ship(Destroyer, Opponent_Grid, Coordinate'(5, 1), "vertical");
 
          Put (" Opponent Grid              Player Grid");
          New_Line;
