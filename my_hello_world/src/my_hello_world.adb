@@ -9,21 +9,14 @@ with Ada.Numerics.Discrete_Random;
 
 procedure My_Hello_World is
 
-   type Coordinate is record
-      X : Natural;
-      Y : Natural;
-   end record;
-
-   type Grid is array (1 .. 10, 1 .. 10) of Natural;
-   type Tile_Array is array (Positive range <>) of Coordinate;
-
    type Ship is tagged record
       Length : Natural;
       Hits : Natural := 0;
       Name: Unbounded_String;
-      Tiles: Tile_Array(1 .. 6);
-
+      Lookup_Index : Integer;
    end record;
+
+   type Display_Grid is array (1 .. 10, 1 .. 10) of Integer;
 
    subtype Random_Range is Integer range 1 .. 10;
    package Random_Roll is new
@@ -38,7 +31,8 @@ procedure My_Hello_World is
    Number_Generator : Random_Roll.Generator;
    Orientation_Generator : Random_Orientation_Roll.Generator;
 
-   Coord : Integer;
+   Player_Total_Hits : Integer := 0;
+   Opponent_Total_Hits : Integer := 0;
 
    begin
 
@@ -46,7 +40,7 @@ procedure My_Hello_World is
 
          procedure Place_Ship (
             S : in out Ship; 
-            G : in out Grid; 
+            G : in out Display_Grid; 
             Direction : String
             ) is
          begin
@@ -71,14 +65,17 @@ procedure My_Hello_World is
                      end if;
 
                      for I in 1 .. S.Length loop
-                        if Valid_Placement and then G(Coord_X + I, Coord_Y) = 1 then
+                        if Valid_Placement and then G(Coord_X + I, Coord_Y) > 0 then
                            Valid_Placement := False; -- another ship is already there
                         end if;
                      end loop;
 
                      if Valid_Placement then
                         for I in 1 .. S.Length loop
-                           G(Coord_X + I, Coord_Y) := 1;
+                           Put_Line(Integer'Image(S.Lookup_Index));
+                           G(Coord_X + I, Coord_Y) := S.Lookup_Index;
+                           Put_Line (To_String(S.Name));
+                           Put_Line (Integer'Image(G(Coord_X + I, Coord_Y)));
                         end loop;
                         Ship_Placed := True;
                      end if;
@@ -90,14 +87,14 @@ procedure My_Hello_World is
                      end if;
 
                      for I in 1 .. S.Length loop
-                        if Valid_Placement and then G(Coord_X, Coord_Y + I) = 1 then
+                        if Valid_Placement and then G(Coord_X, Coord_Y + I) > 0 then
                            Valid_Placement := False;
                         end if;
                      end loop;
 
                      if Valid_Placement then
                         for I in 1 .. S.Length loop
-                           G(Coord_X, Coord_Y + I) := 1;
+                           G(Coord_X, Coord_Y + I) := S.Lookup_Index;
                         end loop;
                         Ship_Placed := True;
                      end if;
@@ -117,25 +114,29 @@ procedure My_Hello_World is
 
          --  Player1_Grid : Grid := (others => (others => 0));
          --  Player2_Grid : Grid := (others => (others => 0));
-         
-         Opponent_Grid: Grid := (others => (others => 0));
-         Opponent_Grid_Hidden : Grid := (others => (others => 0));
-         Opponent_Memory : Grid := (others => (others => 0));
+         Opponent_Grid: Display_Grid := (others => (others => 0));
+         Opponent_Display_Grid: Display_Grid := (others => (others => 0));
+         --  Opponent_Memory : Grid := (others => (others => 0));
 
-         Player_Grid: Grid := (others => (others => 0));
-         Player_Grid_Hidden : Grid := (others => (others => 0));
+         --  Player_Grid: Grid := (others => (others => 0));
+
+         Player_Grid : Display_Grid := (others => (others => 0));
+         Player_Display_Grid: Display_Grid:= (others => (others => 0));
+
+         Turn : Integer;
 
          type Ship_Info is record
             Name : Unbounded_String;
             Length : Integer;
+            Lookup_Index : Integer;
          end record;
 
-         Ship_Lookup : array (1 .. 5) of Ship_Info := (
-            (To_Unbounded_String("Carrier"), 5),
-            (To_Unbounded_String("Battleship"), 4),
-            (To_Unbounded_String("Cruiser"), 3),
-            (To_Unbounded_String("Submarine"), 3),
-            (To_Unbounded_String("Destroyer"), 2)
+         Ship_Template : array (1 .. 5) of Ship_Info := (
+            (To_Unbounded_String("Carrier"), 5, 2),
+            (To_Unbounded_String("Battleship"), 4, 3),
+            (To_Unbounded_String("Cruiser"), 3, 4),
+            (To_Unbounded_String("Submarine"), 3, 5),
+            (To_Unbounded_String("Destroyer"), 2, 6)
          );
 
          Player_Ships :  array (1 .. 5) of Ship;
@@ -155,10 +156,10 @@ procedure My_Hello_World is
          Reset(Number_Generator);
          Reset(Orientation_Generator);
 
-
          for I in 1 .. 5 loop
-            Player_Ships(I).Length := Ship_Lookup(I).Length;
-            Player_Ships(I).Name := Ship_Lookup(I).Name;
+            Player_Ships(I).Length := Ship_Template(I).Length;
+            Player_Ships(I).Name := Ship_Template(I).Name;
+            Player_Ships(I).Lookup_Index := Ship_Template(I).Lookup_Index;
 
             if Random_Orientation_Roll.Random(Orientation_Generator) = 1 then
                Place_Ship(Player_Ships(I), Player_Grid, "horizontal");
@@ -168,8 +169,9 @@ procedure My_Hello_World is
          end loop;
 
          for I in 1 .. 5 loop
-            Opponent_Ships(I).Length := Ship_Lookup(I).Length;
-            Opponent_Ships(I).Name := Ship_Lookup(I).Name;
+            Opponent_Ships(I).Length := Ship_Template(I).Length;
+            Opponent_Ships(I).Name := Ship_Template(I).Name;
+            Opponent_Ships(I).Lookup_Index := Ship_Template(I).Lookup_Index;
 
             if Random_Orientation_Roll.Random(Orientation_Generator) = 1 then
                Place_Ship(Opponent_Ships(I), Opponent_Grid, "horizontal");
@@ -179,15 +181,12 @@ procedure My_Hello_World is
          end loop;
 
 
-         Put (" Opponent Grid              Player Grid");
-         New_Line;
-         New_Line;
-         
-         Put ("   0 1 2 3 4 5 6 7 8 9      0 1 2 3 4 5 6 7 8 9");
-         New_Line;
-
+        
          while True loop
-
+            New_Line;
+            Put ("   Opponent Grid            Player Grid");
+            New_Line;
+   
             for I in Player_Grid'Range loop
                --  Put (Player_Grid(I, 2)'Image);
 
@@ -196,13 +195,13 @@ procedure My_Hello_World is
                   Put (X_Offset'Image);
                   Put (" ");
 
-               for J in Opponent_Grid_Hidden'Range loop
-                  if Opponent_Grid_Hidden(I, J) = 0 then
+               for J in Opponent_Display_Grid'Range loop
+                  if Opponent_Display_Grid(I, J) = 0 then
                      Put (Water_Symbol);
-                  else if Opponent_Grid_Hidden(I, J) = 1 then
-                     Put (Ship_Symbol);
-                  else if Opponent_Grid_Hidden(I, J) = 2 then
+                  else if Opponent_Display_Grid(I, J) = 1 then
                      Put (Miss_Symbol);
+                  else if Opponent_Display_Grid(I, J) >= 2 then
+                     Put (Ship_Symbol);
                   end if; end if; end if;
 
                   Put (" ");
@@ -216,9 +215,9 @@ procedure My_Hello_World is
                   if Player_Grid(I, J) = 0 then
                      Put (Water_Symbol);
                   else if Player_Grid(I, J) = 1 then
-                     Put (Ship_Symbol);
-                  else if Player_Grid(I, J) = 2 then
                      Put (Miss_Symbol);
+                  else if Player_Grid(I, J) >= 2 then
+                     Put (Ship_Symbol);
                   end if; end if; end if;
 
                   Put (" ");
@@ -228,6 +227,10 @@ procedure My_Hello_World is
                New_Line;
 
             end loop;
+            Put ("   0 1 2 3 4 5 6 7 8 9      0 1 2 3 4 5 6 7 8 9");
+            New_Line;
+
+
 
 
             New_Line;
@@ -269,7 +272,7 @@ procedure My_Hello_World is
                         New_Line;
 
                      --  elsif co-ord has already been guessed (in oppontn_grid_hidden), then it is invalid
-                     elsif Opponent_Grid_Hidden(Integer'Value(Input_Line(1 .. 1)) + 1, Integer'Value(Input_Line(3 .. 3)) + 1) /= 0 then
+                     elsif Opponent_Display_Grid(Integer'Value(Input_Line(1 .. 1)) + 1, Integer'Value(Input_Line(3 .. 3)) + 1) /= 0 then
                         New_Line;
                         Put(" Invalid input.");
                         New_Line;
@@ -295,13 +298,26 @@ procedure My_Hello_World is
 
                New_Line;
 
-               if Opponent_Grid(X_Coordinate, Y_Coordinate) = 1 then
-                  Put("   Hit!");
-                  Opponent_Grid_Hidden(X_Coordinate, Y_Coordinate) := 1;
-               else
+               if Opponent_Grid(X_Coordinate, Y_Coordinate) = 0 then
                   Put("   Miss!");
-                  Opponent_Grid_Hidden(X_Coordinate, Y_Coordinate) := 2;
+                  Opponent_Display_Grid(X_Coordinate, Y_Coordinate) := 1;
                end if;
+               if Opponent_Grid(X_Coordinate, Y_Coordinate) > 0 then
+                  Put("   Hit! " & Integer'Image(Opponent_Grid(X_Coordinate, Y_Coordinate))); 
+                  Opponent_Display_Grid(X_Coordinate, Y_Coordinate) := Opponent_Grid(X_Coordinate, Y_Coordinate);
+                  --  Opponent_Display_Grid(X_Coordinate, Y_Coordinate) := Player_Ships(Opponent_Grid(X_Coordinate, Y_Coordinate).Ship_Element.Lookup_Index) + 2;
+               end if;
+
+
+               
+               --  .Is_Ship then
+               --    Put("   Hit! " & To_String(Opponent_Grid(X_Coordinate, Y_Coordinate).Ship_Element.Name)); 
+               --    Opponent_Display_Grid(X_Coordinate, Y_Coordinate) := Player_Ships(Opponent_Grid(X_Coordinate, Y_Coordinate).Ship_Element.Lookup_Index) + 2;
+               --  --    Opponent_Grid(X_Coordinate, Y_Coordinate).Ship_Element.Lookup_Index + 2;
+               --  else
+               --     Put("   Miss!");
+               --     Opponent_Display_Grid(X_Coordinate, Y_Coordinate) := 1;
+               --  end if;
 
                New_Line;
                New_Line;
