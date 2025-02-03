@@ -1,52 +1,30 @@
-# Learning ADA
+# Battleship Game in Ada
 
-- `gnat` : Freely-available Ada-95 compiler (in deb repos)
-- `gprbuild` : Compiler and builder for Ada projects (in deb repos)
-- `alire` : Ada package manager (clone via git)
-- `alr-completion.bash` : Source this to get alr completion
-  - `alr` must be in /bin (at least symlinked)
-  - It seems to take a long time to source, may not be worth inside of .bashrc / .zshrc (change -P -> -p for zsh)
-  - `alias salr="source /home/mk/Documens/alire/scripts/alr-completion.bash" >> ~/.zshrc`
+Thank you for checking out this project! I am working to create a CLI battleship-style game in the programming language Ada in order to gain a working knowledge of it. 
 
+Below are steps to help run this project locally:
 
-## Hello world
-- Using [ada-lang.io](https://ada-lang.io/docs/learn/tutorial/hello-world/)
-- `alr init --bin my_hello_world` : Create basic project structure
-- `alire.toml` : Describes what's in the project
-- `my_hello_world.gpr` : Low-level GNAT project file
-- `my_hello_world.adb` : Ada source code with logic
+```bash
+# Install Ada tooling, this will differ if not running debian-based OS
+apt install gnat gprbuild
+# Download and install Alire (ada package manager)
+wget https://github.com/alire-project/alire/releases/download/v2.0.2/alr-2.0.2-bin-x86_64-linux.zip 
+unzip ./alr-2.0.2-bin-x86_64-linux.zip 
+ln -s /usr/bin/alr ./alr-2.0.2-bin-x86_64-linux/bin/alr 
+# ^ Store wherever is appropriate, e.g. /opt, or move the binary to /usr/bin directly 
 
-- `alr build` : Creates binary
-- `alr run` : Runs binary
+# Clone this repo and install deps
+git clone git@github.com:KondrotM/battleship.git
+cd ./battleship/battleship
+alr install
 
-```adb
--- Context clause (imports)
-with Ada.Text_IO;
-
--- Start of program
-procedure My_Hello_World is
--- Define variables here
-begin -- Starts execution
-   Ada.Text_IO.Put_Line ("Hello, World!");
-end My_Hello_World; -- End of program
+# Run the project!
+alr run
 ```
 
-## Passing args
-- Use `Ada.Command_Line`
-- After building, you can `./bin/program arg1 arg2 ..`
-- You can also `alr run --args="arg1 arg2 .."`
-
-## For loop
-```adb
-for Next in First_Value .. Last_Value loop
-   -- Do these steps.
-end loop;
-```
-
-
-## Five structural elements
-To review [here](https://ada-lang.io/docs/learn/overview/five-structural-elements) when creating more complex code
-
-
-
-
+Goals:
+- [x] Prototype complete
+- [x] Boat placement and user input
+- [ ] Intelligent AI guessing
+- [ ] Ada unit testing 
+- [ ] Compile/Host on web site
