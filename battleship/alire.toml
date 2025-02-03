@@ -1,0 +1,11 @@
+name = "battleship"
+description = "CLI clone of the game Battleship"
+version = "0.1.0-dev"
+
+authors = ["mk"]
+maintainers = ["mk <matej@kondrot.net>"]
+licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
+website = ""
+tags = []
+
+executables = ["battleship"]
