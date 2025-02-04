@@ -87,10 +87,7 @@ procedure Battleship is
 
                      if Valid_Placement then
                         for I in 1 .. S.Length loop
-                           Put_Line(Integer'Image(S.Lookup_Index));
                            G(Coord_X + I, Coord_Y) := S.Lookup_Index;
-                           Put_Line (To_String(S.Name));
-                           Put_Line (Integer'Image(G(Coord_X + I, Coord_Y)));
                         end loop;
                         Ship_Placed := True;
                      end if;
@@ -176,6 +173,7 @@ procedure Battleship is
 
 
                -- count the number of hits of each type on the display grid
+               -- TODO: Finish logic process
 
                for I in DG'Range loop
                   for J in DG'Range(2) loop
@@ -185,13 +183,6 @@ procedure Battleship is
                         Memory(I, J).Y := J;
                         Memory(I, J).Val := DG(I, J);
 
-                        Put_Line(Integer'Image(Memory(1, 1).Val)); 
-                        
-                        --  Memory(DG(I, J)).X := I;
-
-                        --  Memory(I, J).Val := 2;
-                        --  Memory(DG(I, J)).X := I;
-                        --  Memory(DG(I, J)).Y := J;
                      end if;
                   end loop;
                end loop;
@@ -367,17 +358,6 @@ procedure Battleship is
                   Opponent_Display_Grid(X_Coordinate, Y_Coordinate) := Opponent_Grid(X_Coordinate, Y_Coordinate);
                   --  Opponent_Display_Grid(X_Coordinate, Y_Coordinate) := Player_Ships(Opponent_Grid(X_Coordinate, Y_Coordinate).Ship_Element.Lookup_Index) + 2;
                end if;
-
-
-               
-               --  .Is_Ship then
-               --    Put("   Hit! " & To_String(Opponent_Grid(X_Coordinate, Y_Coordinate).Ship_Element.Name)); 
-               --    Opponent_Display_Grid(X_Coordinate, Y_Coordinate) := Player_Ships(Opponent_Grid(X_Coordinate, Y_Coordinate).Ship_Element.Lookup_Index) + 2;
-               --  --    Opponent_Grid(X_Coordinate, Y_Coordinate).Ship_Element.Lookup_Index + 2;
-               --  else
-               --     Put("   Miss!");
-               --     Opponent_Display_Grid(X_Coordinate, Y_Coordinate) := 1;
-               --  end if;
 
                New_Line;
                New_Line;
